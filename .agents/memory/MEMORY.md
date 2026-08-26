@@ -1,0 +1,1 @@
+- [GitHub empty-repository sync](github-empty-repository-sync.md) — Empty GitHub repos need a contents-API initialization before Git data commits; batch tree writes avoid edge throttling.
