@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "360* to Health Web"
+description = "A browser-first health consult experience that combines ten medical perspectives into one thoughtful, actionable analysis for people seeking clarity about their symptoms."
+version = "1.0.0"
+id = "artifacts/holistic-health-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21647
+
+[services.development]
+run = "pnpm --filter @workspace/holistic-health-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/holistic-health-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/holistic-health-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21647"
+BASE_PATH = "/"
