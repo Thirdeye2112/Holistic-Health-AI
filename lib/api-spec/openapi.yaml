@@ -1,0 +1,258 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: medlens
+    description: Multi-discipline medical analysis
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /medlens/disciplines:
+    get:
+      operationId: listDisciplines
+      tags: [medlens]
+      summary: List supported medical disciplines
+      responses:
+        "200":
+          description: Disciplines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Discipline"
+  /medlens/analyze:
+    post:
+      operationId: analyzeAilment
+      tags: [medlens]
+      summary: Start an analysis job and return its ID immediately
+      description: Kicks off the analysis in the background and returns a jobId. Poll GET /medlens/job/{jobId} for the result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeAilmentBody"
+      responses:
+        "200":
+          description: Job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisJob"
+  /medlens/job/{jobId}:
+    get:
+      operationId: getAnalysisJob
+      tags: [medlens]
+      summary: Poll the status and result of an analysis job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisJobStatus"
+        "404":
+          description: Job not found
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Discipline:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tagline:
+          type: string
+        accent:
+          type: string
+      required: [id, name, tagline, accent]
+    FollowupAnswer:
+      type: object
+      properties:
+        disciplineId:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+      required: [disciplineId, question, answer]
+    AnalyzeAilmentBody:
+      type: object
+      properties:
+        ailment:
+          type: string
+          description: Free-text description of symptoms or ailment
+        age:
+          type: integer
+          nullable: true
+        sex:
+          type: string
+          nullable: true
+        history:
+          type: string
+          nullable: true
+          description: Optional medical history, medications, lifestyle context
+        followupAnswers:
+          type: array
+          items:
+            $ref: "#/components/schemas/FollowupAnswer"
+        mode:
+          type: string
+          enum: [light, standard, premium]
+          description: light uses GPT on 3 user-chosen disciplines (free); standard uses GPT on all 10 (1 credit); premium uses GPT+Claude+Gemini synthesized on all 10 (3 credits)
+          nullable: true
+        disciplines:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: For light mode — IDs of the 3 disciplines the user selected
+        imageBase64:
+          type: string
+          nullable: true
+          description: Base64-encoded image of a symptom, rash, or test-result document
+        imageMimeType:
+          type: string
+          nullable: true
+          description: MIME type of the attached image (e.g. image/jpeg, image/png)
+        labResults:
+          type: string
+          nullable: true
+          description: Pasted text of lab results, blood work values, or medical reports
+      required: [ailment]
+    Diagnosis:
+      type: object
+      properties:
+        condition:
+          type: string
+        likelihood:
+          type: string
+          description: e.g. high, moderate, low
+        rationale:
+          type: string
+      required: [condition, likelihood, rationale]
+    DisciplinePerspective:
+      type: object
+      properties:
+        disciplineId:
+          type: string
+        disciplineName:
+          type: string
+        accent:
+          type: string
+        summary:
+          type: string
+        diagnoses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Diagnosis"
+        adjacentIssues:
+          type: array
+          items:
+            type: string
+          description: Adjacent issues that may be causing or contributing
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Suggested next steps from this discipline's perspective
+        followUpQuestions:
+          type: array
+          items:
+            type: string
+          description: Questions to further refine the diagnosis
+        evidenceNotes:
+          type: array
+          items:
+            type: string
+          description: Brief mentions of relevant studies, abstracts, or guidelines
+        recommendedTests:
+          type: array
+          items:
+            type: string
+          description: Lab tests, imaging, or investigations this discipline recommends
+      required:
+        - disciplineId
+        - disciplineName
+        - accent
+        - summary
+        - diagnoses
+        - adjacentIssues
+        - recommendations
+        - followUpQuestions
+        - evidenceNotes
+        - recommendedTests
+    AnalysisResult:
+      type: object
+      properties:
+        ailment:
+          type: string
+        crossDisciplinaryThemes:
+          type: array
+          items:
+            type: string
+          description: Patterns observed across multiple disciplines
+        redFlags:
+          type: array
+          items:
+            type: string
+          description: Symptoms that suggest urgent in-person medical care
+        perspectives:
+          type: array
+          items:
+            $ref: "#/components/schemas/DisciplinePerspective"
+      required: [ailment, crossDisciplinaryThemes, redFlags, perspectives]
+    AnalysisJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+      required: [jobId]
+    AnalysisJobStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, done, error]
+        result:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisResult"
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      required: [status]

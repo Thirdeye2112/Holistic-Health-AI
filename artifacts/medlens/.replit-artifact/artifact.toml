@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "360* to Health"
+version = "1.0.0"
+id = "artifacts/medlens"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18282
+
+[services.development]
+run = "pnpm --filter @workspace/medlens run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/medlens", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/medlens", "run", "serve" ]
+
+[services.env]
+PORT = "18282"
+BASE_PATH = "/"

@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "VjIFA18_Icj86FJ2Tc5q7"
+uri = "file://artifacts/medlens/assets/images/icon.png"
+type = "image"
+title = "medlens app icon"
